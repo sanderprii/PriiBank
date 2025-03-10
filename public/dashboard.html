@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MinuPank - Juhtpaneel</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="container">
+    <header>
+        <div class="logo">
+            <h1>MinuPank</h1>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html" class="active">Juhtpaneel</a></li>
+                <li><a href="#" id="logoutButton">Logi välja</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="dashboard">
+            <div class="sidebar">
+                <div class="sidebar-user">
+                    <h3 id="userWelcome">Tere!</h3>
+                    <p id="userUsername"></p>
+                </div>
+                <ul class="sidebar-menu">
+                    <li><a href="#" class="active" data-view="overview">Ülevaade</a></li>
+                    <li><a href="#" data-view="accounts">Kontod</a></li>
+                    <li><a href="#" data-view="transactions">Tehingud</a></li>
+                    <li><a href="#" data-view="transfer">Ülekanded</a></li>
+                </ul>
+            </div>
+            <div class="content">
+                <div id="alertContainer"></div>
+
+                <!-- Ülevaate vaade -->
+                <div id="overviewView" class="view-section">
+                    <div class="dashboard-header">
+                        <h2>Teie ülevaade</h2>
+                    </div>
+                    <div class="accounts-grid" id="overviewAccounts">
+                        <!-- Kontode loend genereeritakse JavaScriptiga -->
+                    </div>
+                    <div class="dashboard-header">
+                        <h3>Viimased tehingud</h3>
+                    </div>
+                    <table class="transactions-table">
+                        <thead>
+                        <tr>
+                            <th>Kuupäev</th>
+                            <th>Summa</th>
+                            <th>Valuuta</th>
+                            <th>Saaja/Saatja</th>
+                            <th>Olek</th>
+                        </tr>
+                        </thead>
+                        <tbody id="recentTransactions">
+                        <!-- Tehingute loend genereeritakse JavaScriptiga -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Kontode vaade -->
+                <div id="accountsView" class="view-section" style="display: none;">
+                    <div class="dashboard-header">
+                        <h2>Minu kontod</h2>
+                        <button class="btn btn-primary" id="newAccountBtn">Uus konto</button>
+                    </div>
+                    <div class="accounts-grid" id="accountsList">
+                        <!-- Kontode loend genereeritakse JavaScriptiga -->
+                    </div>
+                </div>
+
+                <!-- Tehingute vaade -->
+                <div id="transactionsView" class="view-section" style="display: none;">
+                    <div class="dashboard-header">
+                        <h2>Tehingute ajalugu</h2>
+                    </div>
+                    <table class="transactions-table">
+                        <thead>
+                        <tr>
+                            <th>Kuupäev</th>
+                            <th>Saatja</th>
+                            <th>Saaja</th>
+                            <th>Summa</th>
+                            <th>Valuuta</th>
+                            <th>Selgitus</th>
+                            <th>Olek</th>
+                        </tr>
+                        </thead>
+                        <tbody id="transactionsList">
+                        <!-- Tehingute loend genereeritakse JavaScriptiga -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Ülekande vaade -->
+                <div id="transferView" class="view-section" style="display: none;">
+                    <div class="dashboard-header">
+                        <h2>Tee ülekanne</h2>
+                    </div>
+                    <form id="transferForm">
+                        <div class="form-group">
+                            <label for="fromAccount">Saatja konto</label>
+                            <select id="fromAccount" name="fromAccount" class="form-control" required>
+                                <option value="">Vali konto</option>
+                                <!-- Kontode loend genereeritakse JavaScriptiga -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="toAccount">Saaja konto</label>
+                            <input type="text" id="toAccount" name="toAccount" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="amount">Summa</label>
+                            <input type="number" id="amount" name="amount" class="form-control" min="0.01" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="currency">Valuuta</label>
+                            <select id="currency" name="currency" class="form-control" required>
+                                <option value="EUR">EUR</option>
+                                <option value="USD">USD</option>
+                                <option value="GBP">GBP</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="explanation">Selgitus</label>
+                            <input type="text" id="explanation" name="explanation" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Kinnita makse</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 MinuPank. Kõik õigused kaitstud.</p>
+    </footer>
+</div>
+
+<!-- Uue konto modaal -->
+<div id="newAccountModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Uue konto loomine</h3>
+            <button class="close-modal">&times;</button>
+        </div>
+        <form id="newAccountForm">
+            <div class="form-group">
+                <label for="accountCurrency">Valuuta</label>
+                <select id="accountCurrency" name="currency" class="form-control" required>
+                    <option value="EUR">EUR</option>
+                    <option value="USD">USD</option>
+                    <option value="GBP">GBP</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary close-modal-btn">Tühista</button>
+                <button type="submit" class="btn btn-primary">Loo konto</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="js/dashboard.js"></script>
+</body>
+</html>

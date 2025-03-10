@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="et">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MinuPank - Sisene</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="container">
+    <header>
+        <div class="logo">
+            <h1>MinuPank</h1>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Avaleht</a></li>
+                <li><a href="login.html" class="active">Sisene</a></li>
+                <li><a href="register.html">Registreeru</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="form-container">
+            <h2>Logi sisse</h2>
+            <div id="alertContainer"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Kasutajanimi</label>
+                    <input type="text" id="username" name="username" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Parool</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Sisene</button>
+            </form>
+            <div class="form-footer">
+                <p>Pole veel kontot? <a href="register.html">Registreeru</a></p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 MinuPank. Kõik õigused kaitstud.</p>
+    </footer>
+</div>
+
+<script src="js/login.js"></script>
+</body>
+</html>
