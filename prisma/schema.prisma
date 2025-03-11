@@ -48,6 +48,10 @@ model Transaction {
   externalToAccount   String?
   amount              Float
   currency            String
+  // Uued väljad valuutakonversiooni jaoks
+  conversionRate      Float?
+  convertedAmount     Float?
+  convertedCurrency   String?
   status              String // pending, inProgress, completed, failed
   explanation         String?
   senderName          String?

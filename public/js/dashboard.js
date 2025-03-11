@@ -1,3 +1,4 @@
+// public/js/dashboard.js
 document.addEventListener('DOMContentLoaded', () => {
     // Kontrolli, kas kasutaja on sisse logitud
     const token = localStorage.getItem('token');
@@ -184,7 +185,13 @@ document.addEventListener('DOMContentLoaded', () => {
             loadAccounts();
             loadTransactions();
 
-            showAlert('Ülekanne edukalt teostatud!', 'success');
+            // Näita vastust koos konversiooniinfoga, kui see on olemas
+            let successMessage = 'Ülekanne edukalt teostatud!';
+            if (data.conversionInfo) {
+                successMessage += ` Konverteeritud: ${data.conversionInfo.originalAmount} ${data.conversionInfo.originalCurrency} -> ${data.conversionInfo.convertedAmount} ${data.conversionInfo.convertedCurrency}`;
+            }
+
+            showAlert(successMessage, 'success');
         } catch (error) {
             showAlert(error.message, 'error');
         }
@@ -211,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (accounts.length === 0) {
                 accountsList.innerHTML = '<p>Sul pole veel kontosid. Loo uus konto, et alustada.</p>';
-                return;
+                return [];
             }
 
             accounts.forEach(account => {
@@ -254,13 +261,19 @@ document.addEventListener('DOMContentLoaded', () => {
             transactionsList.innerHTML = '';
 
             if (transactions.length === 0) {
-                transactionsList.innerHTML = '<tr><td colspan="7" style="text-align: center;">Tehinguid pole veel tehtud.</td></tr>';
-                return;
+                transactionsList.innerHTML = '<tr><td colspan="8" style="text-align: center;">Tehinguid pole veel tehtud.</td></tr>';
+                return [];
             }
 
             transactions.forEach(transaction => {
                 let fromAccount = transaction.fromAccount ? transaction.fromAccount.accountNumber : transaction.externalFromAccount || 'N/A';
                 let toAccount = transaction.toAccount ? transaction.toAccount.accountNumber : transaction.externalToAccount || 'N/A';
+
+                // Loo konversiooniinfo veerg
+                let conversionInfo = '-';
+                if (transaction.conversionRate) {
+                    conversionInfo = `${formatCurrency(transaction.convertedAmount, transaction.convertedCurrency)} (${transaction.convertedCurrency})`;
+                }
 
                 transactionsList.innerHTML += `
                     <tr>
@@ -271,6 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td>${transaction.currency}</td>
                         <td>${transaction.explanation || 'Ülekanne'}</td>
                         <td><span class="status-badge status-${transaction.status}">${translateStatus(transaction.status)}</span></td>
+                        <td>${conversionInfo}</td>
                     </tr>
                 `;
             });
@@ -326,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
             recentTransactions.innerHTML = '';
 
             if (transactions.length === 0) {
-                recentTransactions.innerHTML = '<tr><td colspan="5" style="text-align: center;">Tehinguid pole veel tehtud.</td></tr>';
+                recentTransactions.innerHTML = '<tr><td colspan="6" style="text-align: center;">Tehinguid pole veel tehtud.</td></tr>';
                 return;
             }
 
@@ -342,6 +356,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     ? transaction.receiverName || 'N/A'
                     : transaction.senderName || 'N/A';
 
+                // Loo konversiooniinfo veerg
+                let conversionInfo = '-';
+                if (transaction.conversionRate) {
+                    conversionInfo = `${formatCurrency(transaction.convertedAmount, transaction.convertedCurrency)} (${transaction.convertedCurrency})`;
+                }
+
                 recentTransactions.innerHTML += `
                     <tr>
                         <td>${formatDate(transaction.createdAt)}</td>
@@ -349,6 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <td>${transaction.currency}</td>
                         <td>${displayName}</td>
                         <td><span class="status-badge status-${transaction.status}">${translateStatus(transaction.status)}</span></td>
+                        <td>${conversionInfo}</td>
                     </tr>
                 `;
             });
@@ -357,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Uuenda ülekande vormi kontode loendiga
+    // Uuenda ülekande vormi kontode loendiga ja valuutakursiga
     async function updateTransferForm() {
         try {
             const response = await fetch('/api/accounts', {
@@ -379,16 +400,66 @@ document.addEventListener('DOMContentLoaded', () => {
             // Lisa kontod rippmenüüsse
             accounts.forEach(account => {
                 fromAccountSelect.innerHTML += `
-                    <option value="${account.accountNumber}">${account.accountNumber} (${account.currency}: ${formatCurrency(account.balance, account.currency)})</option>
+                    <option value="${account.accountNumber}" data-currency="${account.currency}">${account.accountNumber} (${account.currency}: ${formatCurrency(account.balance, account.currency)})</option>
                 `;
             });
 
-            // Lisa sündmuskuulaja kontode valikule, et muuta valuuta vastavalt kontole
-            fromAccountSelect.addEventListener('change', () => {
-                const selectedAccount = accounts.find(acc => acc.accountNumber === fromAccountSelect.value);
-                if (selectedAccount) {
-                    currencySelect.value = selectedAccount.currency;
+            // Lisa sündmuskuulajad valuutakursi näitamiseks
+            const fromAccountElement = document.getElementById('fromAccount');
+            const currencyElement = document.getElementById('currency');
+            const toAccountElement = document.getElementById('toAccount');
+            const exchangeRateContainer = document.getElementById('exchangeRateContainer') ||
+                document.createElement('div');
+
+            if (!document.getElementById('exchangeRateContainer')) {
+                exchangeRateContainer.id = 'exchangeRateContainer';
+                exchangeRateContainer.className = 'form-group';
+                // Lisa konteiner ülekande vormi
+                const amountGroup = document.querySelector('label[for="amount"]').parentNode;
+                amountGroup.parentNode.insertBefore(exchangeRateContainer, amountGroup.nextSibling);
+            }
+
+            // Funktsioon valuutakursi näitamiseks
+            async function showExchangeRate() {
+                const fromOption = fromAccountElement.options[fromAccountElement.selectedIndex];
+                if (!fromOption || !fromOption.value) return;
+
+                const fromCurrency = fromOption.dataset.currency;
+                const toCurrency = currencyElement.value;
+
+                if (fromCurrency && toCurrency && fromCurrency !== toCurrency) {
+                    try {
+                        const response = await fetch(`/api/currency/rates/${fromCurrency}/${toCurrency}`);
+                        const data = await response.json();
+
+                        exchangeRateContainer.innerHTML = `
+                            <div class="exchange-rate-info">
+                                <p>Valuutakurss: 1 ${fromCurrency} = ${data.rate} ${toCurrency}</p>
+                            </div>
+                        `;
+                    } catch (error) {
+                        exchangeRateContainer.innerHTML = `
+                            <div class="exchange-rate-info">
+                                <p>Valuutakurssi ei õnnestunud laadida</p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    exchangeRateContainer.innerHTML = '';
                 }
+            }
+
+            // Lisa sündmuskuulajad
+            fromAccountElement.addEventListener('change', showExchangeRate);
+            currencyElement.addEventListener('change', showExchangeRate);
+
+            // Määra saatja konto valuuta vaikeväärtuseks, kui konto on valitud
+            fromAccountElement.addEventListener('change', () => {
+                const selectedOption = fromAccountElement.options[fromAccountElement.selectedIndex];
+                if (selectedOption && selectedOption.dataset.currency) {
+                    currencyElement.value = selectedOption.dataset.currency;
+                }
+                showExchangeRate();
             });
         } catch (error) {
             showAlert(error.message, 'error');

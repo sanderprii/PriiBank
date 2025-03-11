@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsDoc = require('swagger-jsdoc');
-
+const currencyRoutes = require('./routes/currency');
 // Impordi marsruudid
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -47,7 +47,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/transactions', jwksRoutes);
-
+app.use('/api/currency', currencyRoutes);
 // 404 käitleja
 app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, '../public/index.html'));
