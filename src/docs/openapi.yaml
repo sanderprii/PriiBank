@@ -1,0 +1,723 @@
+openapi: 3.0.0
+info:
+  title: MinuPank API
+  description: A comprehensive API documentation for MinuPank banking application
+  version: 1.0.0
+  contact:
+    name: MinuPank Support
+    email: tugi@minupank.com
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Use your JWT token as Bearer authentication
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Account:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountNumber:
+          type: string
+        userId:
+          type: string
+          format: uuid
+        balance:
+          type: number
+          format: float
+        currency:
+          type: string
+          enum: [EUR, USD, GBP]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fromAccountId:
+          type: string
+          format: uuid
+          nullable: true
+        toAccountId:
+          type: string
+          format: uuid
+          nullable: true
+        externalFromAccount:
+          type: string
+          nullable: true
+        externalToAccount:
+          type: string
+          nullable: true
+        amount:
+          type: number
+          format: float
+        currency:
+          type: string
+          enum: [EUR, USD, GBP]
+        conversionRate:
+          type: number
+          format: float
+          nullable: true
+        convertedAmount:
+          type: number
+          format: float
+          nullable: true
+        convertedCurrency:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, inProgress, completed, failed]
+        explanation:
+          type: string
+          nullable: true
+        senderName:
+          type: string
+          nullable: true
+        receiverName:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ExchangeRate:
+      type: object
+      properties:
+        rate:
+          type: number
+          format: float
+
+    ExchangeRates:
+      type: object
+      properties:
+        EUR:
+          type: object
+          properties:
+            USD:
+              type: number
+            GBP:
+              type: number
+            EUR:
+              type: number
+        USD:
+          type: object
+          properties:
+            EUR:
+              type: number
+            GBP:
+              type: number
+            USD:
+              type: number
+        GBP:
+          type: object
+          properties:
+            EUR:
+              type: number
+            USD:
+              type: number
+            GBP:
+              type: number
+
+    JWKS:
+      type: object
+      properties:
+        keys:
+          type: array
+          items:
+            type: object
+            properties:
+              kid:
+                type: string
+              kty:
+                type: string
+              alg:
+                type: string
+              use:
+                type: string
+              n:
+                type: string
+              e:
+                type: string
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+paths:
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: Creates a new user account in the system
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  example: john_doe
+                password:
+                  type: string
+                  minLength: 6
+                  format: password
+                  example: secure_password
+      responses:
+        '201':
+          description: User successfully registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  userId:
+                    type: string
+                    format: uuid
+        '400':
+          description: Invalid registration data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login an existing user
+      description: Authenticates a user and returns a JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  example: john_doe
+                password:
+                  type: string
+                  format: password
+                  example: secure_password
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  expiresAt:
+                    type: string
+                    format: date-time
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      username:
+                        type: string
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout the current user
+      description: Invalidates the current session token
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful logout
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/accounts:
+    get:
+      tags:
+        - Accounts
+      summary: Get all user accounts
+      description: Returns all accounts belonging to the authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Account'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      tags:
+        - Accounts
+      summary: Create a new account
+      description: Creates a new bank account for the authenticated user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - currency
+              properties:
+                currency:
+                  type: string
+                  enum: [EUR, USD, GBP]
+                  example: EUR
+      responses:
+        '201':
+          description: Account successfully created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '400':
+          description: Invalid account data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/accounts/{id}:
+    get:
+      tags:
+        - Accounts
+      summary: Get single account details
+      description: Returns details of a specific account
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Account details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - account belongs to another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/transactions:
+    post:
+      tags:
+        - Transactions
+      summary: Create a new transaction
+      description: Creates a new bank transfer between accounts
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fromAccount
+                - toAccount
+                - amount
+                - currency
+              properties:
+                fromAccount:
+                  type: string
+                  description: Sender's account number
+                  example: ABC123456789
+                toAccount:
+                  type: string
+                  description: Recipient's account number
+                  example: XYZ987654321
+                amount:
+                  type: number
+                  format: float
+                  minimum: 0.01
+                  example: 100.00
+                currency:
+                  type: string
+                  enum: [EUR, USD, GBP]
+                  example: EUR
+                explanation:
+                  type: string
+                  example: Payment for services
+      responses:
+        '201':
+          description: Transaction successfully created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  transaction:
+                    $ref: '#/components/schemas/Transaction'
+                  conversionInfo:
+                    type: object
+                    properties:
+                      originalAmount:
+                        type: number
+                      originalCurrency:
+                        type: string
+                      convertedAmount:
+                        type: number
+                      convertedCurrency:
+                        type: string
+                      conversionRate:
+                        type: number
+        '400':
+          description: Invalid transaction data or insufficient funds
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - account belongs to another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - Transactions
+      summary: Get transaction history
+      description: Returns all transactions where the user is either sender or recipient
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current user profile
+      description: Returns the profile information of the authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/currency/rates:
+    get:
+      tags:
+        - Currency
+      summary: Get all exchange rates
+      description: Returns all supported currency exchange rates
+      responses:
+        '200':
+          description: Exchange rates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeRates'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/currency/rates/{from}/{to}:
+    get:
+      tags:
+        - Currency
+      summary: Get specific exchange rate
+      description: Returns the exchange rate between two specific currencies
+      parameters:
+        - name: from
+          in: path
+          required: true
+          description: Source currency code
+          schema:
+            type: string
+            enum: [EUR, USD, GBP]
+        - name: to
+          in: path
+          required: true
+          description: Target currency code
+          schema:
+            type: string
+            enum: [EUR, USD, GBP]
+      responses:
+        '200':
+          description: Exchange rate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExchangeRate'
+        '400':
+          description: Invalid currency codes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /transactions/jwks:
+    get:
+      tags:
+        - Bank-to-Bank
+      summary: Get bank's public keys
+      description: Returns the bank's public keys in JWKS format for transaction verification
+      responses:
+        '200':
+          description: JWKS containing public keys
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JWKS'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /transactions/b2b:
+    post:
+      tags:
+        - Bank-to-Bank
+      summary: Process incoming transaction
+      description: Endpoint for receiving incoming transactions from other banks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - jwt
+              properties:
+                jwt:
+                  type: string
+                  description: JWT containing transaction details signed by the sending bank
+      responses:
+        '200':
+          description: Transaction successfully processed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  receiverName:
+                    type: string
+        '400':
+          description: Invalid JWT or transaction data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Recipient account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

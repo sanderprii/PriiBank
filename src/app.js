@@ -11,7 +11,7 @@ const userRoutes = require('./routes/users');
 const accountRoutes = require('./routes/accounts');
 const transactionRoutes = require('./routes/transactions');
 const jwksRoutes = require('./routes/jwks');
-
+const YAML = require('yamljs');
 const app = express();
 
 // Middleware
@@ -19,27 +19,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Swagger definitsioon
-const swaggerOptions = {
-    definition: {
-        openapi: '3.0.0',
-        info: {
-            title: 'MinuPank API',
-            version: '1.0.0',
-            description: 'MinuPank API dokumentatsioon',
-        },
-        servers: [
-            {
-                url: `http://localhost:${process.env.PORT || 3000}`,
-                description: 'Arendusserver'
-            },
-        ],
-    },
-    apis: ['./src/routes/*.js'],
-};
+// Load OpenAPI specification from YAML file
 
-const swaggerDocs = swaggerJsDoc(swaggerOptions);
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+const swaggerDocument = YAML.load(path.join(__dirname, './docs/openapi.yaml'));
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Marsruudid
 app.use('/api/auth', authRoutes);
